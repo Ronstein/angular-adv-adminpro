@@ -6,6 +6,7 @@ import { LoginForm } from '../interfaces/login-form.interface';
 import { catchError, map, tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 import { Router } from '@angular/router';
+import { Usuario } from '../models/usuario.model';
 
 declare const google: any;
 
@@ -16,11 +17,20 @@ const base_url = environment.base_url;
 })
 export class UsuarioService {
 
+  public usuario?: Usuario;
+
   constructor(
     private http: HttpClient,
     private router: Router,
   ) { }
 
+  get token(): string {
+    return localStorage.getItem('token') || '';
+  }
+
+  get uid(): string {
+    return this.usuario?.uid ?? '';
+  }
   crearUsuario(formData: RegisterForm) {
     //console.log('creando usuario')
     return this.http.post(`${base_url}/usuarios`, formData)
@@ -30,6 +40,23 @@ export class UsuarioService {
           localStorage.setItem('token', resp.token)
         })
       );
+  }
+
+  actualizarPerfil(data: { email: string, nombre: string, role: string }) {
+
+    data = {
+      ...data,
+      role: this.usuario!.role ?? 'USER_ROLE'
+    }
+
+    return this.http.put(
+      `${base_url}/usuarios/${this.uid}`,
+      data,
+      {
+        headers: {
+          'x-token': this.token
+        }
+      });
   }
 
   login(formData: LoginForm) {
@@ -53,23 +80,31 @@ export class UsuarioService {
   }
 
   validarToken(): Observable<boolean> {
-    const token = localStorage.getItem('token') ?? '';
+
     return this.http.get(`${base_url}/login/renew`,
-      { headers: { 'x-token': token } })
+      { headers: { 'x-token': this.token } })
       .pipe(
-        tap((resp: any) => {
-          localStorage.setItem('token', resp.token)
+        map((resp: any) => {
+          //console.log(resp);
+          const { email, google, nombre, role, uid, img = '' } = resp.usuario;
+          this.usuario = new Usuario(
+            nombre, email, '', img, role, google, uid
+          );
+          localStorage.setItem('token', resp.token);
+          return true;
         }),
-        map(resp => true),
         catchError(error => of(false))
       );
   }
 
   logout() {
     localStorage.removeItem('token');
-
-    google.accounts.id.revoke('ron.pavezb@gmail.com', () => {
+    if (this.usuario?.google) {
+      google.accounts.id.revoke(this.usuario?.email, () => {
+        this.router.navigateByUrl('/login');
+      });
+    } else {
       this.router.navigateByUrl('/login');
-    });
+    }
   }
 }
