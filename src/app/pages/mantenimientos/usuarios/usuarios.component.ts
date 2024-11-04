@@ -35,7 +35,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
         //y no se ve reflejado inmediatamente el cambio de imagen
         delay(100)
       )
-      .subscribe(img => this.cargarUsuarios())
+      .subscribe(img => this.cargarUsuarios());
   }
 
   ngOnDestroy(): void {
@@ -66,8 +66,8 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     if (termino.length === 0) return this.usuarios = this.usuariosTemp;
     //console.log(termino);
     return this.busquedasService.buscar('usuarios', termino)
-      .subscribe(resultados => {
-        this.usuarios = resultados;
+      .subscribe((resultados) => {
+        this.usuarios = resultados as Usuario[];
       })
   }
 
