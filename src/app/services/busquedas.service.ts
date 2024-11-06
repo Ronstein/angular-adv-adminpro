@@ -49,11 +49,16 @@ export class BusquedasService {
     return resultados;
   }
 
+  busquedaGlobal(termino: string) {
+    const url = `${base_url}/todo/${termino}`;
+    return this.http.get(url, this.headers)
+  }
+
   buscar(tipo: 'usuarios' | 'medicos' | 'hospitales',
     termino: string
   ) {
     const url = `${base_url}/todo/coleccion/${tipo}/${termino}`;
-    return this.http.get<Usuario[]>(url, this.headers)
+    return this.http.get(url, this.headers)
       .pipe(
         map((resp: any) => {
           switch (tipo) {

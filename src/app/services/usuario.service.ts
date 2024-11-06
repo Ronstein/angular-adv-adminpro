@@ -8,6 +8,7 @@ import { Observable, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { Usuario } from '../models/usuario.model';
 import { CargarUsuario } from '../interfaces/cargar-usuarios.interface';
+import { MenuItem } from './interfaces/sidebar.interface';
 
 declare const google: any;
 
@@ -33,6 +34,10 @@ export class UsuarioService {
     return this.usuario?.uid ?? '';
   }
 
+  get role(): 'ADMIN_ROLE' | 'USER_ROLE' {
+    return this.usuario.role!;
+  }
+
   get headers() {
     return {
       headers: {
@@ -41,13 +46,21 @@ export class UsuarioService {
     }
   }
 
+  guardarLocalStorage(token: string, menu: MenuItem) {
+    localStorage.setItem('token', token);
+    localStorage.setItem('menu', JSON.stringify(menu)); // Convierte a JSON
+  }
+
   crearUsuario(formData: RegisterForm) {
     //console.log('creando usuario')
     return this.http.post(`${base_url}/usuarios`, formData)
       .pipe(
         tap((resp: any) => {
           //console.log(resp);
-          localStorage.setItem('token', resp.token)
+          this.guardarLocalStorage(resp.token, resp.menu);
+
+          // localStorage.setItem('token', resp.token);
+          // localStorage.setItem('menu', resp.menu);
         })
       );
   }
@@ -71,7 +84,7 @@ export class UsuarioService {
       .pipe(
         tap((resp: any) => {
           //console.log(resp);
-          localStorage.setItem('token', resp.token)
+          this.guardarLocalStorage(resp.token, resp.menu);
         })
       );
   }
@@ -81,7 +94,7 @@ export class UsuarioService {
       .pipe(
         tap((resp: any) => {
           //console.log(resp);
-          localStorage.setItem('token', resp.token)
+          this.guardarLocalStorage(resp.token, resp.menu);
         })
       )
   }
@@ -97,7 +110,7 @@ export class UsuarioService {
           this.usuario = new Usuario(
             nombre, email, '', img, role, google, uid
           );
-          localStorage.setItem('token', resp.token);
+          this.guardarLocalStorage(resp.token, resp.menu);
           return true;
         }),
         catchError(error => of(false))
@@ -106,6 +119,10 @@ export class UsuarioService {
 
   logout() {
     localStorage.removeItem('token');
+    // todo: Borrar Menu
+    localStorage.removeItem('menu');
+
+
     if (this.usuario?.google) {
       google.accounts.id.revoke(this.usuario?.email, () => {
         this.router.navigateByUrl('/login');
